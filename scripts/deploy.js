@@ -3,7 +3,7 @@ const { ethers } = require("hardhat");
 async function main() {
   const signer = new ethers.Wallet(process.env.SIGNER_KEY);
   const Land = await ethers.getContractFactory("MutariuumLand");
-  const land = await Land.deploy(signer.address);
+  const land = await Land.deploy(signer.address, signer.address);
 
   await land.deployed();
 

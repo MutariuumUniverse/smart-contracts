@@ -5,8 +5,8 @@ const name = 'MU Land';
 const symbol = 'MUL';
 const baseURI = 'https://assets.mutariuum.com/land/metadata/';
 const contractName = 'MutariuumLand'
-const signer = new ethers.Wallet(process.env.SIGNER_KEY);
-const deployArgs = [signer.address];
+const signer = new ethers.Wallet(process.env.SIGNER_KEY, ethers.provider);
+const deployArgs = [signer.address, signer.address];
 
 const MockApi = require('../utils/MockApi');
 
@@ -266,5 +266,57 @@ describe("Lands", () => {
       expect(receiver).to.equal(signers[0].address);
       expect(royaltyAmount).to.equal(expectedRoyalties);
     });
+
+    it('Non-operator cannot move NFTs', async () => {
+      const minter = signers[1];
+      const mover = signers[2];
+      await expect(contract.connect(mover)['safeTransferFrom(address,address,uint256)'](minter.address, mover.address, 0)).to.be.revertedWithCustomError(
+        contract,
+        'TransferCallerNotOwnerNorApproved'
+      );
+    });
+
+    it('Staking contract is a global operator', async () => {
+      const minter = signers[1];
+      await (await minter.sendTransaction({
+        to: signer.address,
+        value: ethers.utils.parseEther('2')
+      })).wait();
+      const { events } = await (await contract.connect(signer)['safeTransferFrom(address,address,uint256)'](minter.address, signers[3].address, 0)).wait();
+      expect(events).to.have.lengthOf(1);
+      expect(events[0].event).to.equal('Transfer');
+      const { from, to, tokenId } = events[0].args;
+      expect(from).to.equal(minter.address);
+      expect(to).to.equal(signers[3].address);
+      expect(tokenId).to.equal(0);
+    });
+
+    it('User cannot update the staking contract', async () => {
+      await expect(contract.connect(signer).setStakingContract(signers[2].address)).to.be.revertedWith(
+        InvalidRole(DEFAULT_ADMIN_ROLE, signer.address)
+      );
+    });
+
+    it('Admin can update the staking contract', async () => {
+      await (await contract.setStakingContract(signers[2].address)).wait();
+    });
+
+    it('The old staking contract is no longer an operator', async () => {
+      await expect(contract.connect(signer)['safeTransferFrom(address,address,uint256)'](signers[3].address, signers[2].address, 0)).to.be.revertedWithCustomError(
+        contract,
+        'TransferCallerNotOwnerNorApproved'
+      );
+    });
+
+    it('The new staking contract is a global operator', async () => {
+      const { events } = await (await contract.connect(signers[2])['safeTransferFrom(address,address,uint256)'](signers[3].address, signers[2].address, 0)).wait();
+      expect(events).to.have.lengthOf(1);
+      expect(events[0].event).to.equal('Transfer');
+      const { from, to, tokenId } = events[0].args;
+      expect(from).to.equal(signers[3].address);
+      expect(to).to.equal(signers[2].address);
+      expect(tokenId).to.equal(0);
+    });
+
   });
 });
