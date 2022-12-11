@@ -139,8 +139,8 @@ describe("Lands", () => {
       expect(receipt.events).to.have.lengthOf(1);
       const event = receipt.events.pop();
       expect(event.event).to.equal('Transfer');
-      expect(event.args.tokenId).to.equal(0);
-      expect(await contract.tokenURI(0)).to.equal(`${baseURI}0.json`);
+      expect(event.args.tokenId).to.equal(1);
+      expect(await contract.tokenURI(1)).to.equal(`${baseURI}1.json`);
     });
 
     it('Can mint two', async () => {
@@ -152,18 +152,18 @@ describe("Lands", () => {
       expect(receipt.events).to.have.lengthOf(2);
       const [first, second] = receipt.events;
       expect(first.event).to.equal('Transfer');
-      expect(first.args.tokenId).to.equal(1);
+      expect(first.args.tokenId).to.equal(2);
       expect(second.event).to.equal('Transfer');
-      expect(second.args.tokenId).to.equal(2);
-      expect(await contract.tokenURI(1)).to.equal(`${baseURI}1.json`);
+      expect(second.args.tokenId).to.equal(3);
       expect(await contract.tokenURI(2)).to.equal(`${baseURI}2.json`);
+      expect(await contract.tokenURI(3)).to.equal(`${baseURI}3.json`);
     });
 
     it('Cannot refund with the wrong start ID', async () => {
       const minter = signers[1];
       const value = ethers.utils.parseEther('0.2');
       const blockNumber = await ethers.provider.getBlockNumber();
-      const signature = await api.approveRefund(minter.address, 0, value, 1, 2, blockNumber);
+      const signature = await api.approveRefund(minter.address, value, 1, 2, blockNumber);
       await expect(contract.connect(minter).refund(0, 2, blockNumber, value, signature)).to.be.revertedWithCustomError(
         contract,
         'InvalidSignature'
@@ -197,20 +197,20 @@ describe("Lands", () => {
       const minter = signers[1];
       const value = ethers.utils.parseEther('0.2');
       const blockNumber = await ethers.provider.getBlockNumber();
-      const signature = await api.approveRefund(minter.address, value, 1, 2, blockNumber);
-      const { events } = await (await contract.connect(minter).refund(1, 2, blockNumber, value, signature)).wait();
+      const signature = await api.approveRefund(minter.address, value, 2, 2, blockNumber);
+      const { events } = await (await contract.connect(minter).refund(2, 2, blockNumber, value, signature)).wait();
       expect(events).to.have.lengthOf(3);
       expect(events[0].event).to.equal('Transfer');
       expect(events[0].args.from).to.equal(minter.address);
       expect(events[0].args.to).to.equal(ethers.constants.AddressZero);
-      expect(events[0].args.tokenId).to.equal(1);
+      expect(events[0].args.tokenId).to.equal(2);
       expect(events[1].event).to.equal('Transfer');
       expect(events[1].args.from).to.equal(minter.address);
       expect(events[1].args.to).to.equal(ethers.constants.AddressZero);
-      expect(events[1].args.tokenId).to.equal(2);
+      expect(events[1].args.tokenId).to.equal(3);
       expect(events[2].event).to.equal('Refund');
       expect(events[2].args.to).to.equal(minter.address);
-      expect(events[2].args.startTokenId).to.equal(1);
+      expect(events[2].args.startTokenId).to.equal(2);
       expect(events[2].args.quantity).to.equal(2);
     });
 
@@ -240,8 +240,8 @@ describe("Lands", () => {
 
     it('Admin can change the baseURI', async () => {
       await (await contract.setBaseURI('lel')).wait();
-      const uri = await contract.tokenURI(0);
-      expect(uri).to.equal('lel0.json');
+      const uri = await contract.tokenURI(1);
+      expect(uri).to.equal('lel1.json');
     });
 
     it('Computes royalties correctly', async () => {
@@ -270,7 +270,7 @@ describe("Lands", () => {
     it('Non-operator cannot move NFTs', async () => {
       const minter = signers[1];
       const mover = signers[2];
-      await expect(contract.connect(mover)['safeTransferFrom(address,address,uint256)'](minter.address, mover.address, 0)).to.be.revertedWithCustomError(
+      await expect(contract.connect(mover)['safeTransferFrom(address,address,uint256)'](minter.address, mover.address, 1)).to.be.revertedWithCustomError(
         contract,
         'TransferCallerNotOwnerNorApproved'
       );
@@ -282,13 +282,13 @@ describe("Lands", () => {
         to: signer.address,
         value: ethers.utils.parseEther('2')
       })).wait();
-      const { events } = await (await contract.connect(signer)['safeTransferFrom(address,address,uint256)'](minter.address, signers[3].address, 0)).wait();
+      const { events } = await (await contract.connect(signer)['safeTransferFrom(address,address,uint256)'](minter.address, signers[3].address, 1)).wait();
       expect(events).to.have.lengthOf(1);
       expect(events[0].event).to.equal('Transfer');
       const { from, to, tokenId } = events[0].args;
       expect(from).to.equal(minter.address);
       expect(to).to.equal(signers[3].address);
-      expect(tokenId).to.equal(0);
+      expect(tokenId).to.equal(1);
     });
 
     it('User cannot update the staking contract', async () => {
@@ -302,21 +302,20 @@ describe("Lands", () => {
     });
 
     it('The old staking contract is no longer an operator', async () => {
-      await expect(contract.connect(signer)['safeTransferFrom(address,address,uint256)'](signers[3].address, signers[2].address, 0)).to.be.revertedWithCustomError(
+      await expect(contract.connect(signer)['safeTransferFrom(address,address,uint256)'](signers[3].address, signers[2].address, 1)).to.be.revertedWithCustomError(
         contract,
         'TransferCallerNotOwnerNorApproved'
       );
     });
 
     it('The new staking contract is a global operator', async () => {
-      const { events } = await (await contract.connect(signers[2])['safeTransferFrom(address,address,uint256)'](signers[3].address, signers[2].address, 0)).wait();
+      const { events } = await (await contract.connect(signers[2])['safeTransferFrom(address,address,uint256)'](signers[3].address, signers[2].address, 1)).wait();
       expect(events).to.have.lengthOf(1);
       expect(events[0].event).to.equal('Transfer');
       const { from, to, tokenId } = events[0].args;
       expect(from).to.equal(signers[3].address);
       expect(to).to.equal(signers[2].address);
-      expect(tokenId).to.equal(0);
+      expect(tokenId).to.equal(1);
     });
-
   });
 });

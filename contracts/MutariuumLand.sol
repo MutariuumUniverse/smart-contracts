@@ -199,6 +199,10 @@ contract MutariuumLand is ERC721A, Ownable, AccessControl, ERC2981, IMutariuumNF
         return ECDSA.recover(hash, signature);
     }
 
+    function _startTokenId() internal pure override(ERC721A) returns (uint256) {
+        return 1;
+    }
+
     function isApprovedForAll(address owner, address operator) public view virtual override(ERC721A) returns (bool) {
         if (operator == _stakingContract) {
             return true;
