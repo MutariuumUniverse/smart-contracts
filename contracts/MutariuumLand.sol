@@ -15,7 +15,9 @@ contract MutariuumLand is ERC721A, Ownable, AccessControl, ERC2981, IMutariuumNF
     uint256 private _royaltyAmount = 750;
     address private _royaltyRecipient;
     address private _stakingContract;
-    string private __baseURI = "https://assets.mutariuum.com/land/metadata/";
+    string private __baseURI = "https://api.land.mutariuum.com/metadata/";
+
+    uint256 private _supply = 333;
 
     constructor(address minter, address staking) ERC721A("MU Land", "MUL") {
         _setupRole(DEFAULT_ADMIN_ROLE, msg.sender);
@@ -31,6 +33,9 @@ contract MutariuumLand is ERC721A, Ownable, AccessControl, ERC2981, IMutariuumNF
         bytes calldata signature
     ) public payable {
         _verifyMintSignature(value, quantity, blockNumber, signature);
+        if (_totalMinted() + quantity > _supply) {
+            revert SoldOut();
+        }
 
         _mint(msg.sender, quantity);
     }
@@ -102,6 +107,10 @@ contract MutariuumLand is ERC721A, Ownable, AccessControl, ERC2981, IMutariuumNF
 
     function setStakingContract(address staking) external onlyRole(DEFAULT_ADMIN_ROLE) {
         _stakingContract = staking;
+    }
+
+    function setSupply(uint256 supply) external onlyRole(DEFAULT_ADMIN_ROLE) {
+        _supply = supply;
     }
 
     function balance() private view returns (uint256) {

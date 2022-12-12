@@ -3,7 +3,7 @@ const { expect } = require("chai");
 
 const name = 'MU Land';
 const symbol = 'MUL';
-const baseURI = 'https://assets.mutariuum.com/land/metadata/';
+const baseURI = 'https://api.land.mutariuum.com/metadata/';
 const contractName = 'MutariuumLand'
 const signer = new ethers.Wallet(process.env.SIGNER_KEY, ethers.provider);
 const deployArgs = [signer.address, signer.address];
@@ -316,6 +316,98 @@ describe("Lands", () => {
       expect(from).to.equal(signers[3].address);
       expect(to).to.equal(signers[2].address);
       expect(tokenId).to.equal(1);
+    });
+  });
+
+  describe('Sold Out scenario', () => {
+    it('Mint 330', async () => {
+      const minter = signers[1];
+      const value = ethers.utils.parseEther('0.2');
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const signature = await api.approveMint(minter.address, value, 330, blockNumber);
+      const receipt = await (await contract.connect(minter).mint(value, 330, blockNumber, signature, { value })).wait();
+      expect(receipt.events).to.have.lengthOf(330);
+      const [first, second] = receipt.events;
+      expect(first.event).to.equal('Transfer');
+      expect(first.args.tokenId).to.equal(1);
+      expect(second.event).to.equal('Transfer');
+      expect(second.args.tokenId).to.equal(2);
+      expect(await contract.tokenURI(1)).to.equal(`${baseURI}1.json`);
+      expect(await contract.tokenURI(2)).to.equal(`${baseURI}2.json`);
+    });
+
+    it('Cannot mint 4', async () => {
+      const minter = signers[2];
+      const value = ethers.utils.parseEther('0.3');
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const signature = await api.approveMint(minter.address, value, 4, blockNumber);
+      await expect(contract.connect(minter).mint(value, 4, blockNumber, signature, { value })).to.be.revertedWithCustomError(
+        contract,
+        'SoldOut'
+      );
+    });
+
+    it('Burn 5', async () => {
+      const minter = signers[1];
+      const value = ethers.utils.parseEther('0.2');
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const signature = await api.approveRefund(minter.address, value, 2, 5, blockNumber);
+      const { events } = await (await contract.connect(minter).refund(2, 5, blockNumber, value, signature)).wait();
+      expect(events).to.have.lengthOf(6);
+      expect(events[5].event).to.equal('Refund');
+      expect(events[5].args.to).to.equal(minter.address);
+      expect(events[5].args.startTokenId).to.equal(2);
+      expect(events[5].args.quantity).to.equal(5);
+    });
+
+    it('Still cannot mint 4', async () => {
+      const minter = signers[2];
+      const value = ethers.utils.parseEther('0.3');
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const signature = await api.approveMint(minter.address, value, 4, blockNumber);
+      await expect(contract.connect(minter).mint(value, 4, blockNumber, signature, { value })).to.be.revertedWithCustomError(
+        contract,
+        'SoldOut'
+      );
+    });
+
+    it('Can mint 3', async () => {
+      const minter = signers[2];
+      const value = ethers.utils.parseEther('0.3');
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const signature = await api.approveMint(minter.address, value, 3, blockNumber);
+      const receipt = await (await contract.connect(minter).mint(value, 3, blockNumber, signature, { value })).wait();
+      expect(receipt.events).to.have.lengthOf(3);
+      const [first, second] = receipt.events;
+      expect(first.event).to.equal('Transfer');
+      expect(first.args.tokenId).to.equal(331);
+      expect(second.event).to.equal('Transfer');
+      expect(second.args.tokenId).to.equal(332);
+    });
+
+    it('User cannot update the supply', async () => {
+      const user = signers[2];
+      await expect(contract.connect(user).setSupply(1000)).to.be.revertedWith(
+        InvalidRole(DEFAULT_ADMIN_ROLE, user.address)
+      );
+    });
+
+    it('Admin can update the supply', async () => {
+      await (await contract.setSupply(666)).wait();
+    });
+
+    it('Can mint 330 more', async () => {
+      const minter = signers[2];
+      const value = ethers.utils.parseEther('1');
+      const blockNumber = await ethers.provider.getBlockNumber();
+      const signature = await api.approveMint(minter.address, value, 330, blockNumber);
+      const receipt = await (await contract.connect(minter).mint(value, 330, blockNumber, signature, { value })).wait();
+      expect(receipt.events).to.have.lengthOf(330);
+      const [first, second] = receipt.events;
+      expect(first.event).to.equal('Transfer');
+      expect(first.args.tokenId).to.equal(334);
+      expect(second.event).to.equal('Transfer');
+      expect(second.args.tokenId).to.equal(335);
     });
   });
 });
