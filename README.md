@@ -6,6 +6,10 @@ yarn
 ```
 
 ### Running Tests
+
+Make sure `NODE_ENV` in your `.env` file is set to `hardhat` (or `localhost` if you have a local node running). Then 
+run:
+
 ```shell
 yarn test
 ```

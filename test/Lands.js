@@ -1,3 +1,8 @@
+if (!['hardhat', 'localhost'].includes(process.env.NODE_ENV)) {
+  console.log('You cannot run tests on a live network');
+  process.exit(1);
+}
+
 const { ethers } = require('hardhat');
 const { expect } = require("chai");
 

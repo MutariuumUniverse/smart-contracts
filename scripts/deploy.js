@@ -12,7 +12,9 @@ async function main() {
     throw new Error(errors.map(e => `\n\t- ${e}`).join(''));
   }
   const Land = await ethers.getContractFactory("MutariuumLand");
-  const land = await Land.deploy(process.env.SIGNER_ADDRESS, process.env.STAKING_ADDRESS);
+  const land = await Land.deploy(process.env.SIGNER_ADDRESS, process.env.STAKING_ADDRESS, {
+    gasLimit: '4500000'
+  });
 
   await land.deployed();
 
