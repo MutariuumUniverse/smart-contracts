@@ -31,7 +31,7 @@ describe("Lands", () => {
     const Land = await ethers.getContractFactory(contractName);
     contract = await Land.deploy(...deployArgs);
 
-    api = new MockApi(contract);
+    api = new MockApi(signer, contract);
 
     await contract.deployed();
   });

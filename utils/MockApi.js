@@ -1,7 +1,7 @@
 const { ethers } = require('ethers');
 
 class MockApi {
-  constructor(contract) {
+  constructor(wallet, contract) {
     this.wallet = new ethers.Wallet(process.env.SIGNER_KEY, contract.provider);
     this.contract = contract.connect(this.wallet);
   }
@@ -11,6 +11,16 @@ class MockApi {
     const message = ethers.utils.solidityKeccak256(
       ['address', 'uint256', 'uint256', 'uint256', 'uint256'],
       [minter, nonce, value, quantity, blockNumber]
+    );
+    return this.wallet.signMessage(ethers.utils.arrayify(message));
+  }
+
+  async approveTestnetMint(minter, value, quantity, blockNumber) {
+    const nonce = await this.contract.getBurnCount(minter);
+    const totalSupply = await this.contract.totalSupply();
+    const message = ethers.utils.solidityKeccak256(
+      ['address', 'uint256', 'uint256', 'uint256', 'uint256', 'uint256'],
+      [minter, nonce, value, totalSupply, quantity, blockNumber]
     );
     return this.wallet.signMessage(ethers.utils.arrayify(message));
   }
