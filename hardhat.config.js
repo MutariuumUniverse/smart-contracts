@@ -4,7 +4,16 @@ require("@nomicfoundation/hardhat-toolbox");
 const accounts = [process.env.DEPLOYER_KEY, process.env.MINTER_KEY];
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
-  solidity: "0.8.17",
+  solidity: {
+    compilers: [
+      {
+        version: '0.8.17'
+      },
+      {
+        version: '0.8.19'
+      }
+    ]
+  },
   defaultNetwork: process.env.NODE_ENV,
   networks: {
     goerli: {
