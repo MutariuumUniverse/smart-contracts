@@ -1,7 +1,8 @@
 require("dotenv").config();
+require('hardhat-contract-sizer');
 require("@nomicfoundation/hardhat-toolbox");
 
-const accounts = [process.env.DEPLOYER_KEY, process.env.MINTER_KEY];
+const accounts = [process.env.DEPLOYER_KEY, process.env.MINTER_KEY].filter(Boolean);
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
@@ -14,7 +15,7 @@ module.exports = {
       }
     ]
   },
-  defaultNetwork: process.env.NODE_ENV,
+  defaultNetwork: process.env.NODE_ENV ?? 'hardhat',
   networks: {
     goerli: {
       accounts,
