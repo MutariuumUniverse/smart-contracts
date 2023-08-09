@@ -2,7 +2,7 @@ require("dotenv").config();
 require('hardhat-contract-sizer');
 require("@nomicfoundation/hardhat-toolbox");
 
-const accounts = [process.env.DEPLOYER_KEY, process.env.MINTER_KEY].filter(Boolean);
+const accounts = [process.env.MINTER_KEY, process.env.DEPLOYER_KEY].filter(Boolean);
 /** @type import('hardhat/config').HardhatUserConfig */
 module.exports = {
   solidity: {
@@ -28,6 +28,10 @@ module.exports = {
     mainnet: {
       accounts,
       url: 'https://rpc.ankr.com/eth'
+    },
+    skale: {
+      accounts,
+      url: 'https://staging-v3.skalenodes.com/v1/staging-faint-slimy-achird'
     }
   },
   etherscan: {

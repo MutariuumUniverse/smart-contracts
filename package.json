@@ -31,6 +31,8 @@
   "scripts": {
     "deploy": "hardhat run scripts/deploy.js",
     "test": "hardhat test",
-    "start": "concurrently 'hardhat node' 'hardhat --network localhost run scripts/setup.js'"
+    "start": "concurrently 'hardhat node' 'hardhat --network localhost run scripts/setup.js'",
+    "stake": "hardhat --network localhost run scripts/stake.js",
+    "unstake": "hardhat --network localhost run scripts/unstake.js"
   }
 }

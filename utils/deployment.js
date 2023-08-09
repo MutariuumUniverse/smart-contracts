@@ -1,6 +1,43 @@
+const path = require('path');
 const { ethers, config } = require('hardhat');
 const { signVoucher, signMultiVoucher } = require('../test/utils/vouchers');
 const MockApi = require('./MockApi');
+
+function loadPrivateKeys(signers) {
+  const accounts = config.networks.hardhat.accounts;
+  const privateKeys = [];
+  for (let i = 0; i < signers.length; i++) {
+    const wallet = ethers.Wallet.fromMnemonic(accounts.mnemonic, accounts.path + `/${i}`);
+    privateKeys[i] = wallet.privateKey;
+  }
+  return privateKeys;
+}
+async function attachContracts() {
+  const signers = await ethers.getSigners();
+  const stakingFactory = await ethers.getContractFactory('MutariuumStaking');
+  const shardFactory = await ethers.getContractFactory('BlackMarketShard')
+  const citizenFactory = await ethers.getContractFactory('MutariuumCitizens')
+  const landsFactory = await ethers.getContractFactory('MutariuumLand');
+  const giveawaysFactory = await ethers.getContractFactory('MutariuumGiveaways');
+  const env = require('dotenv').config({ path: path.join(__dirname, '..', '.env.c.local') }).parsed;
+  const citizen = citizenFactory.attach(env.CITIZEN_ADDRESS);
+  const shard = await shardFactory.attach(env.SHARDS_ADDRESS);
+  const staking = await stakingFactory.attach(env.STAKING_ADDRESS);
+  const land = await landsFactory.attach(env.LAND_ADDRESS);
+  const giveaways = await giveawaysFactory.attach(env.GIVEAWAY_ADDRESS);
+
+  const privateKeys = loadPrivateKeys(signers);
+
+  return {
+    signers,
+    privateKeys,
+    shard,
+    citizen,
+    staking,
+    giveaways,
+    land
+  };
+}
 
 async function deployContracts() {
   const version = '1';
@@ -49,12 +86,7 @@ async function deployContracts() {
 
   await giveaways.setRole(signers[1].address, 1, true);
 
-  const accounts = config.networks.hardhat.accounts;
-  const privateKeys = [];
-  for (let i = 0; i < signers.length; i++) {
-    const wallet = ethers.Wallet.fromMnemonic(accounts.mnemonic, accounts.path + `/${i}`);
-    privateKeys[i] = wallet.privateKey;
-  }
+  const privateKeys = loadPrivateKeys(signers);
 
   return {
     signers,
@@ -144,9 +176,7 @@ async function massMint(context) {
 
 module.exports = {
   deployContracts,
-  mintBlackShards,
-  mintCitizens,
-  mintBlackShards,
+  attachContracts,
   massMint,
   enableStaking
 }
